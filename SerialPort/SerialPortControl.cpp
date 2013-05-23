@@ -130,6 +130,7 @@ void CSerialPortControl::_SerialPortInspectorThread()
 			ASSERT(FALSE);
 		}
 
+		
 		dwWaitResult = ::WaitForMultipleObjects(ahandleWait.size(), ahandleWait.data(), FALSE, INFINITE);
 		switch (dwWaitResult)
 		{
@@ -186,7 +187,6 @@ void CSerialPortControl::Transmit(const std::string &sData)
 	}
 	overLapped.hEvent = seventOverLapped.get();
 
-	std::array<HANDLE, 2> ahandleWait = { m_eventTerminate.m_hObject, seventOverLapped.get() };
 	DWORD dwBytesWritten = 0;
 	if(!::WriteFile(m_shandleSerialPort.get(), sData.c_str(), sData.size(), &dwBytesWritten, &overLapped))
 	{
