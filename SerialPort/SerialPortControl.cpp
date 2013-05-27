@@ -106,7 +106,7 @@ void CSerialPortControl::_SerialPortInspectorThread()
 			FALSE,
 			FALSE,
 			nullptr),
-		::CloseHandle);	// unique_ptr 似乎不支持将 deleter 写在参数列表中，而只能写在模板中（且必须是个类）。
+		::CloseHandle);	// unique_ptr 似乎不支持将 deleter 写在参数列表中，而只能写在模板中（且必须是类）。
 	if (!seventOverLapped)
 	{
 		ASSERT(FALSE);
@@ -141,7 +141,7 @@ void CSerialPortControl::_SerialPortInspectorThread()
 			{
 				std::string sData;
 				DWORD dwBytesRead = 0;
-				std::array<char, SERAILPORT_BUFFERSIZE> abyBuffer;
+				std::array<char, m_nBUFFERSIZE> abyBuffer;
 				do
 				{
 					if (!::ReadFile(m_shandleSerialPort.get(), abyBuffer.data(), abyBuffer.size(), &dwBytesRead, &overLapped))

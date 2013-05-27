@@ -5,12 +5,6 @@
 #include <boost/signals2.hpp>
 #include <boost/thread.hpp>
 
-#define WM_SERIALPORT_BASE				WM_USER
-#define WM_SERIALPORT_RECEIVECOMPLETED	WM_SERIALPORT_BASE
-#define WM_SERIALPORT_RECEIVEFAILED		WM_SERIALPORT_BASE + 1
-#define WM_SERIALPORT_TRANSMITCOMPLETED	WM_SERIALPORT_BASE + 2
-#define WM_SERIALPORT_TRANSMITFAILED	WM_SERIALPORT_BASE + 3
-
 #define SERAILPORT_BUFFERSIZE 128
 
 class CSerialPortControl
@@ -18,6 +12,8 @@ class CSerialPortControl
 public:
 	typedef boost::signals2::signal<void (const std::string &)> signal_string_t;
 	typedef boost::signals2::signal<void (void)> signal_void_t;
+
+	static const int m_nBUFFERSIZE = 128;
 
 	CSerialPortControl(void);
 	virtual ~CSerialPortControl(void);
