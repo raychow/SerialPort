@@ -61,6 +61,14 @@ CSerialPortDlg::CSerialPortDlg(CWnd* pParent /*=NULL*/)
 	, m_csTransmit(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+
+	m_connectionReceiveCompleted = m_serialPortControl.ConnectReceiveCompleted(std::bind(&CSerialPortDlg::OnSerialPortReceiveCompleted, this, std::placeholders::_1));
+	m_connectionTransmitCompleted = m_serialPortControl.ConnectTransmitCompleted(std::bind(&CSerialPortDlg::OnSerialPortTransmitCompleted, this));
+	m_connectionTransmitFailed = m_serialPortControl.ConnectTransmitFailed(std::bind(&CSerialPortDlg::OnSerialPortTransmitFailed, this));
+}
+
+CSerialPortDlg::~CSerialPortDlg()
+{
 }
 
 void CSerialPortDlg::DoDataExchange(CDataExchange* pDX)
@@ -80,11 +88,10 @@ BEGIN_MESSAGE_MAP(CSerialPortDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON_SERIALPORT_OPEN, &CSerialPortDlg::OnBnClickedButtonSerialPortOpen)
-	ON_MESSAGE(WM_SERIALPORT_RECEIVECOMPLETED, &CSerialPortDlg::OnSerialPortReceiveCompleted)
-	ON_MESSAGE(WM_SERIALPORT_TRANSMITCOMPLETED, &CSerialPortDlg::OnSerialPortTransmitCompleted)
 	ON_BN_CLICKED(IDC_BUTTON_SERIALPORT_CLEARRECEIVE, &CSerialPortDlg::OnBnClickedButtonSerialPortClearReceive)
 	ON_BN_CLICKED(IDC_BUTTON_SERIALPORT_TRANSMIT, &CSerialPortDlg::OnBnClickedButtonSerialPortTransmit)
 	ON_BN_CLICKED(IDC_BUTTON_SERIALPORT_CLOSE, &CSerialPortDlg::OnBnClickedButtonSerialportClose)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -254,7 +261,6 @@ void CSerialPortDlg::OnBnClickedButtonSerialPortOpen()
 		return;
 	}
 
-	m_serialPortControl.SetWindowHandle(GetSafeHwnd());
 	if (!m_serialPortControl.Open(m_csCOMPort, nBaudRate, nByteSize, nParity, nStopBits))
 	{
 		AfxMessageBox(_T("Serial port open failed."), MB_ICONERROR);
@@ -321,31 +327,26 @@ void CSerialPortDlg::OnOK()
 	// CDialogEx::OnOK();
 }
 
-LRESULT CSerialPortDlg::OnSerialPortReceiveCompleted(WPARAM wParam, LPARAM lParam)
+void CSerialPortDlg::OnSerialPortReceiveCompleted(const std::string &sData)
 {
-	if (!lParam)
-	{
-		return 0;
-	}
-	std::string &sData = *reinterpret_cast<std::string *>(lParam);
 	USES_CONVERSION;
 	LPCTSTR lpszData = A2T(sData.c_str());
 	m_csReceive.Append(lpszData);
-	UpdateData(FALSE);
-	return 0;
+	GetDlgItem(IDC_EDIT_SERIALPOT_RECEIVE)->SetWindowText(m_csReceive);
+	return;
 }
 
-LRESULT CSerialPortDlg::OnSerialPortTransmitCompleted(WPARAM wParam, LPARAM lParam)
+void CSerialPortDlg::OnSerialPortTransmitCompleted()
 {
 	m_csTransmit.Empty();
-	UpdateData(FALSE);
-	return 0;
+	GetDlgItem(IDC_EDIT_SERIALPOT_TRANSMIT)->SetWindowText(m_csTransmit);
+	return;
 }
 
-LRESULT CSerialPortDlg::OnSerialPortTransmitFailed(WPARAM wParam, LPARAM lParam)
+void CSerialPortDlg::OnSerialPortTransmitFailed()
 {
 	AfxMessageBox(IDS_TRANSMITFAILED, MB_ICONERROR);
-	return 0;
+	return;
 }
 
 void CSerialPortDlg::OnBnClickedButtonSerialPortClearReceive()
@@ -368,4 +369,14 @@ void CSerialPortDlg::OnBnClickedButtonSerialportClose()
 	m_serialPortControl.Close();
 	GetDlgItem(IDC_BUTTON_SERIALPORT_OPEN)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON_SERIALPORT_CLOSE)->EnableWindow(FALSE);
+}
+
+
+void CSerialPortDlg::OnClose()
+{
+	m_connectionReceiveCompleted.disconnect();
+	m_connectionReceiveFailed.disconnect();
+	m_connectionTransmitCompleted.disconnect();
+	m_connectionTransmitFailed.disconnect();
+	CDialogEx::OnClose();
 }

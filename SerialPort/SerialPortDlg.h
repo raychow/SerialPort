@@ -12,6 +12,7 @@ class CSerialPortDlg : public CDialogEx
 // 构造
 public:
 	CSerialPortDlg(CWnd* pParent = NULL);	// 标准构造函数
+	virtual ~CSerialPortDlg();
 
 // 对话框数据
 	enum { IDD = IDD_SERIALPORT_DIALOG };
@@ -31,10 +32,15 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 
-	afx_msg LRESULT OnSerialPortReceiveCompleted(WPARAM wParam, LPARAM lParam);
-	afx_msg LRESULT OnSerialPortTransmitCompleted(WPARAM wParam, LPARAM lParam);
-	afx_msg LRESULT OnSerialPortTransmitFailed(WPARAM wParam, LPARAM lParam);
-	
+	void OnSerialPortReceiveCompleted(const std::string &sData);
+	void OnSerialPortTransmitCompleted();
+	void OnSerialPortTransmitFailed();
+
+	boost::signals2::connection m_connectionReceiveCompleted;
+	boost::signals2::connection m_connectionReceiveFailed;
+	boost::signals2::connection m_connectionTransmitCompleted;
+	boost::signals2::connection m_connectionTransmitFailed;
+
 	CString m_csCOMPort;
 	CString m_csBaudRate;
 	int m_nByteSizeIndex;
@@ -53,4 +59,5 @@ public:
 	afx_msg void OnBnClickedButtonSerialPortClearReceive();
 	afx_msg void OnBnClickedButtonSerialPortTransmit();
 	afx_msg void OnBnClickedButtonSerialportClose();
+	afx_msg void OnClose();
 };

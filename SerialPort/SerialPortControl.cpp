@@ -6,7 +6,6 @@
 CSerialPortControl::CSerialPortControl(void)
 	: m_bOpened(FALSE)
 	, m_dwOldCommMask(0)
-	, m_hWindow(NULL)
 	, m_eventTerminate(FALSE, TRUE)
 {
 }
@@ -14,11 +13,6 @@ CSerialPortControl::CSerialPortControl(void)
 CSerialPortControl::~CSerialPortControl(void)
 {
 	Close();
-}
-
-void CSerialPortControl::SetWindowHandle(HWND hWindow)
-{
-	m_hWindow = hWindow;
 }
 
 BOOL CSerialPortControl::Open(LPCTSTR lpszCOMPort, DWORD dwBaudRate, int nByteSize, int nParity, int nStopBits)
@@ -141,7 +135,7 @@ void CSerialPortControl::_SerialPortInspectorThread()
 			if (dwCommEvent & EV_TXEMPTY)
 			{
 				TRACE(_T("Transmit completed.\n"));
-				SendMessage(m_hWindow, WM_SERIALPORT_TRANSMITCOMPLETED, NULL, NULL);
+				m_signalTransmitCompleted();
 			}
 			else if (dwCommEvent & EV_RXCHAR)
 			{
@@ -153,7 +147,7 @@ void CSerialPortControl::_SerialPortInspectorThread()
 					if (!::ReadFile(m_shandleSerialPort.get(), abyBuffer.data(), abyBuffer.size(), &dwBytesRead, &overLapped))
 					{
 						TRACE(_T("Receive failed.\n"));
-						SendMessage(m_hWindow, WM_SERIALPORT_RECEIVEFAILED, NULL, reinterpret_cast<LPARAM>(&sData));
+						m_signalReceiveFailed(sData);
 						break;
 					}
 					if (dwBytesRead)
@@ -162,7 +156,7 @@ void CSerialPortControl::_SerialPortInspectorThread()
 					}
 				} while (dwBytesRead);
 				TRACE(_T("Receive completed.\n"));
-				SendMessage(m_hWindow, WM_SERIALPORT_RECEIVECOMPLETED, NULL, reinterpret_cast<LPARAM>(&sData));
+				m_signalReceiveCompleted(sData);
 			}
 			break;
 		default:
@@ -170,6 +164,26 @@ void CSerialPortControl::_SerialPortInspectorThread()
 			break;
 		}
 	}
+}
+
+boost::signals2::connection CSerialPortControl::ConnectReceiveCompleted(const signal_string_t::slot_type &subscriber)
+{
+	return m_signalReceiveCompleted.connect(subscriber);
+}
+
+boost::signals2::connection CSerialPortControl::ConnectReceiveFailed(const signal_string_t::slot_type &subscriber)
+{
+	return m_signalReceiveFailed.connect(subscriber);
+}
+
+boost::signals2::connection CSerialPortControl::ConnectTransmitCompleted(const signal_void_t::slot_type &subscriber)
+{
+	return m_signalTransmitCompleted.connect(subscriber);
+}
+
+boost::signals2::connection CSerialPortControl::ConnectTransmitFailed(const signal_void_t::slot_type &subscriber)
+{
+	return m_signalTransmitFailed.connect(subscriber);
 }
 
 void CSerialPortControl::Transmit(const std::string &sData)
@@ -193,7 +207,7 @@ void CSerialPortControl::Transmit(const std::string &sData)
 		if (GetLastError() != ERROR_IO_PENDING)
 		{
 			TRACE(_T("Transmit failed.\n"));
-			SendMessage(m_hWindow, WM_SERIALPORT_TRANSMITFAILED, NULL, NULL);
+			m_signalTransmitFailed();
 			return;
 		}
 	}
